@@ -22,3 +22,4 @@ Score: 9
 2 2     2 2 2 2 2 2 
 2 2     2 2 2 2 2 2 
 = = = = = = = = = = Game over. Reached the top. Your score: 9
+
