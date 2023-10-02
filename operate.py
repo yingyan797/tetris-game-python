@@ -28,24 +28,8 @@ class Structure:
         else:
             op = sep[0]
         game.action(num, op)
-    def restoreStruct(self, info):
-      i = 0
-      score = ""
-      while True:
-          if info[i] == '-':
-              i += 1
-              break
-          i += 1
-      while info[i] != '-':
-          score += info[i]
-          i += 1
-      self.score = float(score)
-      i += 13
-      for j in range(self.rows):
-          for k in range(self.cols):
-              self.board[j][k] = int(info[i])
-              i += 1
-      return i
+    
+    
     def inBoard(self,loc):
         return (loc[0] >= 0 and loc[1] >= 0 and loc[0] < self.rows and loc[1] < self.cols)
     def at(self,loc):
@@ -69,9 +53,3 @@ class Structure:
             disp += "= "
         return disp
     
-    def writeStruct(self, file):
-      file.write("Game pausing; Score-"+str(self.score)+"-\nGame data: ")
-      for r in self.board:
-          for c in r:
-            file.write(str(int(c)))
-       

@@ -44,22 +44,42 @@ class Russian:
 
     def restore(self, fn):
         info = open(fn, "r").read()
-        i = self.struct.restoreStruct(info)
-        for j in range(4):
-            for k in range(2):
-                self.currentBlock[j][k] = int(info[i])
-                i += 1
-        t1 = ""
-        while info[i] != '-':
-            t1 += info[i]
+        score = ""
+        i = 0
+        while info[i] != '\n':
             i += 1
-        i += 1
-        t2 = ""
-        while i < len(info):
-            t2 += info[i]
+        i += 8
+        while info[i] != '\n':
+            score += info[i]
             i += 1
-        self.topleft[0] = int(t1)
-        self.topleft[1] = int(t2)
+        self.struct.score = float(score)
+
+        i += self.struct.cols * 2 + 2
+        tl = False
+        block = np.zeros((4,2))
+        r = 0
+        minr = 0
+        minc = self.struct.cols
+
+        for j in range(self.struct.rows):
+            for k in range(self.struct.cols):
+                if info[i] in "12":
+                    self.struct.board[j][k] = int(info[i])
+                    if info[i] == '1':
+                        if not tl:
+                            tl = True
+                            minr = j
+                        if k < minc:
+                            minc = k
+                        block[r][0] = j
+                        block[r][1] = k
+                        r += 1
+                i += 2
+            i += 1
+        self.topleft = np.array([minr, minc])
+        for j in range(len(block)):
+            self.currentBlock[j] = block[j] - self.topleft
+        
     
     def action(self, num, op):
         vec = np.zeros(2)
@@ -85,9 +105,6 @@ class Russian:
                 self.switch(2)
                 self.nextBlock = True
                 return 
-            case "exit":
-                self.pause = True
-                return
             case _: return 
         
         if vec[0] != 0 or vec[1] != 0:
@@ -172,24 +189,23 @@ class Russian:
         self.nextBlock = False        
 
     def play(self, maxScore, resume, name):
-        fn = name+".txt"
-        self.pause = False
+        fn = "game_history/"+name+".txt"
         if resume:
-            self.nextBlock = False
             self.restore(fn)
+            self.nextBlock = False
         else:
-          self.nextBlock = True
-          self.randomize()
+            self.randomize()
+            self.nextBlock = True
+        
         while self.struct.score < maxScore: 
-          while not self.nextBlock and not self.pause:
+          while not self.nextBlock:
             f = open(fn, "w")
             f.write("Goal: "+str(maxScore)+"\n"+self.struct.show())
             #print(self.struct.board)
             f.close()
             ops = input("请输入操作：")
             self.struct.operate(ops, self)
-          if self.pause:
-              break
+          
           self.checkLine()
           self.blockGen()
           if self.checkFull():
@@ -197,14 +213,6 @@ class Russian:
               f.write("Game over. Reached the top. Your score: "+str(self.struct.score))
               return True
         f = open(fn,"w")
-        if self.pause:
-            print(self.struct.board)
-            self.struct.writeStruct(f)
-            for r in self.currentBlock:
-                for c in r:
-                  f.write(str(int(c)))
-            f.write(str(int(self.topleft[0])) +"-"+ str(int(self.topleft[1])))
-            return False
         f.write("Congratulations for achieving max score " +str(maxScore) +"; Your score: "+str(self.struct.score))
         return True
 
@@ -214,4 +222,4 @@ g1 = Game(20,10).restore(b, 5)
 '''
 
 g1 = Russian(20,10)
-g1.play(10, False, "zubair")
+g1.play(10, False, "andy")
