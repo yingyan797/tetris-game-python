@@ -84,14 +84,10 @@ class Russian:
     def action(self, num, op):
         vec = np.zeros(2)
         trans = np.zeros((2,2))
-        mrc = self.struct.rows
-        if self.struct.cols > mrc:
-            mrc = self.struct.cols
-        if num > mrc:
-            num = mrc
+        mrc = max(self.struct.cols, self.struct.rows)
         if op in ["ss","dd","aa"]:
             op = op[0]
-            num = mrc
+            num = mrc + 5
         match op:
             case "w": trans = np.array([[-1,0],[0,-1]])
             case "s": vec = np.array([1,0])
@@ -101,21 +97,30 @@ class Russian:
             case "r": trans = np.array([[0,1],[-1,0]])
             case "p": 
                 if self.checkShift(np.array([1,0])):
+                    print("Error: Not reach the bottom, cannot procede to the next block")
                     return 
                 self.switch(2)
                 self.nextBlock = True
                 return 
-            case _: return 
+            case _: 
+                print("Error: Operation not recognizable")
+                return 
         
         if vec[0] != 0 or vec[1] != 0:
-            for i in range(num):
-                if self.checkShift(vec):
-                    self.switch(0)
-                    self.topleft += vec
-                    self.switch(1)
+            i = 1
+            while i <= num:
+                if self.checkShift(i*vec):
+                    i += 1  
                 else:
-                    return
+                    break
+           
+            self.switch(0)
+            self.topleft += (i-1)*vec
+            self.switch(1)
         else:
+            if num > mrc:
+                print("Too many rotations. Capped to", mrc, "times")
+                num = mrc
             for j in range(num):
                 nb = self.currentBlock.copy()
                 left = 0
@@ -128,12 +133,15 @@ class Russian:
                         left = nb[i][1]
                 for i in range(4):
                     nb[i] -= np.array([up, left])
+
                 if self.checkRotate(nb):
                     self.switch(0)
                     self.currentBlock = nb
                     self.switch(1)
-        return
-    
+                else:
+                    print("Error: Rotation not successful due to obstacle")
+                    return
+                    
     def checkShift(self,vec):
         for p in self.currentBlock:
             loc = self.topleft + p + vec
@@ -155,6 +163,7 @@ class Russian:
 
     def checkLine(self):
         i = self.struct.rows - 1
+        num = 0
         fac = 1
         while i >= 0:
             line = True
@@ -163,6 +172,7 @@ class Russian:
                     line = False
                     break
             if line:
+                num += 1
                 self.struct.score += fac
                 fac *= 1.5
                 k = i
@@ -172,10 +182,13 @@ class Russian:
                 self.struct.board[0] = np.zeros(self.struct.cols)
             else:
                 i -= 1
+        print("Nice job.", num,"line(s) cleared.")
+
     def checkFull(self):
         if not self.checkShift(np.array([1,0])):
             for i in self.struct.board[0]:
                 if i > 0:
+                    self.switch(1)
                     return True
         return False
 
@@ -190,6 +203,7 @@ class Russian:
 
     def play(self, maxScore, resume, name):
         fn = "game_history/"+name+".txt"
+        print("Game starts. Please enter operation after \"--\" ")
         if resume:
             self.restore(fn)
             self.nextBlock = False
@@ -203,17 +217,21 @@ class Russian:
             f.write("Goal: "+str(maxScore)+"\n"+self.struct.show())
             #print(self.struct.board)
             f.close()
-            ops = input("请输入操作：")
+            ops = input("-- ")
             self.struct.operate(ops, self)
           
           self.checkLine()
           self.blockGen()
           if self.checkFull():
+              gameOver = "Game over. Reached the top. Your score: "+str(self.struct.score)
               f = open(fn,"a")
-              f.write("Game over. Reached the top. Your score: "+str(self.struct.score))
+              f.write(gameOver)
+              print(gameOver)
               return True
+        congrats = "Congratulations for achieving max score " +str(maxScore) +"; Your score: "+str(self.struct.score)
         f = open(fn,"w")
-        f.write("Congratulations for achieving max score " +str(maxScore) +"; Your score: "+str(self.struct.score))
+        f.write(congrats)
+        print(congrats)
         return True
 
 '''
@@ -222,4 +240,4 @@ g1 = Game(20,10).restore(b, 5)
 '''
 
 g1 = Russian(20,10)
-g1.play(10, False, "andy")
+g1.play(10, True, "andy")
