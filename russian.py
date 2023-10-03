@@ -1,5 +1,6 @@
 import numpy as np
 from operate import Structure
+from player import Session
 
 def block(index):
     match index:
@@ -182,7 +183,8 @@ class Russian:
                 self.struct.board[0] = np.zeros(self.struct.cols)
             else:
                 i -= 1
-        print("Nice job.", num,"line(s) cleared.")
+        if num > 0:
+            print("Nice job.", num,"line(s) cleared.")
 
     def checkFull(self):
         if not self.checkShift(np.array([1,0])):
@@ -201,13 +203,61 @@ class Russian:
         self.switch(1)
         self.nextBlock = False        
 
-    def play(self, maxScore, resume, name):
-        fn = "game_history/"+name+".txt"
-        print("Game starts. Please enter operation after \"--\" ")
+    def play(self):
+        print("Welcome to tetris game.")
+        resume = input("Resume previous game? Yes (y); No (any other key) ")
+        login = "y"
+        if resume != "y":
+            login = input("Will start new game. Login or sign up? Login (y); Sign up (any other key) ")
+
+        pname = input("Enter user name: ")
+        pe = Session.findPlayer(pname)
+        if login != "y": 
+            if pe != "":
+                print("User name exists. Please choose another one.") 
+                return
+            while True:
+                pwd = input("Enter password: ")
+                if len(pwd) >= 4:
+                    pwd2 = input("Confirm password: ")
+                    if pwd == pwd2:
+                        print("User registered.")
+                        Session.regPlayer(pname, pwd)
+                        break
+                    else:
+                        print("Password doesn't match. Please enter again.")
+                else:
+                    print("Password must be no shorter than 4 characters. Choose another one.")
+        else:
+            pwd = input("Enter password: ")
+            if pe != "" and pe == Session.encr(pwd):
+                print("Login successful.")
+            else:
+                print("No matching user credential.")
+                return
+
+        maxScore = 0
+        while True:
+            ms = input("Set your goal (can be changed every time logging in): ")
+            valid = True
+            for m in ms:
+                if not m.isdigit():
+                    valid = False
+                    print("Goal score must be number. Enter again.")
+                    break
+            if valid:
+                maxScore = float(ms)
+                break
+        
+        tn = Session.encr(pname)
+        fn = "game_history/"+tn+".txt"
+        print("Game starts. Please open text file", fn, ". Enter operation after \"--\" ")
+
         if resume:
             self.restore(fn)
             self.nextBlock = False
         else:
+            open(fn, "a").close()
             self.randomize()
             self.nextBlock = True
         
@@ -240,4 +290,4 @@ g1 = Game(20,10).restore(b, 5)
 '''
 
 g1 = Russian(20,10)
-g1.play(10, True, "andy")
+g1.play()
